@@ -1,4 +1,4 @@
-//package clause
+// package clause
 package main
 
 //Import statement
@@ -13,14 +13,38 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-//Package düzeyündeki variable'lar uygulama ayakta olduğu sürece memory üzerinde kalırlar.
-//Function scpor variable'lar ise function scope kapandığı anda dispose olurlar.
+//************************//
+//Go modules: Go programlama dili için geliştirilmiş bağımlılık yönetim sistemidir. Go projemizin bağımlı olduğu paketler go.mod dosyası içinde yer alır.
+//Bu dosya sayesinde go projemizin bağımlı olduğu paketlerin hangi versiyonları ile çalışabileceğimizi seçebiliriz. Böylece kullandığımız paketlerin yeni
+//sürümleri çıktığında proje kodlarımız ile third part package kodları arasında uyumsuzluk yaşamayız. Proje içerisinde modüle sistemini kullanmak için
+//go mod init komutunu çalıştırmalıyız.
+
+// Go mod tidy: Bağımlılıklarımızı düzenleyen komuttur. Bu komutu çalıştırdığımızda go.mod dosyamızdaki required kısmındaki kullanılmayan ama eklenmiş olan gereksiz
+// bağımlılıklar silinir. Projenin bütün .go uzantılı dosyalarına bakar ve import edilmeyen paketleri go.mod dosyasından siler.
+
+// go get -v github.com/Mertcan/Test diyerek paketi localimeze çekebiliriz. Yada go mod tidy dersek yine bizim localimize otomatik olarak package çekecetir.
+
+//go.sum: Bu dosya go.mod dosyası içerisindeki bağımlılıkların doğrulama kodlarını içerir. Oluşturduğumuz projeyi başka bir makinede çalıştırmak istersek
+// bunun için yapılması gereken eğer exe dosyasını yani derlenmiş(compile) halini vermeyeceksek kaynak kodları vermeliyiz. Verdikten sonra karşı taraftaki makinede
+//go modules tarafıdan algılanan paketleri internet üzerinden indirecek. Peki ya versiyonunu belirttiğimiz halde indirilen paketler ile biz projeyi yaptığımız zamandaki
+// paketin kodları aynı değilse. Bu durumda sıkıntılar oluşabilir. Zararlı kodlar eski versiyondaki kodlara enjecte edilmiş olabilir. İşte bu durumda go modules kaynak kodları
+//analiz ederek bir hash oluşturuyor. İndirilen paketin aynı olup olmadığını kontrol ediyor. İŞte bu go.sum dosyası ile gerçekleşir.
+
+// Package düzeyündeki variable'lar uygulama ayakta olduğu sürece memory üzerinde kalırlar.
+// Function scpor variable'lar ise function scope kapandığı anda dispose olurlar.
 var testPackageVar = "Package"
 
-//Code
+// Code
 func main() {
-	Mertcan()
-	printProduct()
+	pointerversionsix()
+	//pointerversionfive()
+	//emptyInterfaceConvert()
+	//channel.ChannelWithSelect()
+	//channel.BufferedChannelWithGoroutine()
+	//channel.UnBufferedChannel()
+	//executeUnBufferedChan()
+	//Mertcan()
+	//printProduct()
 	//pointerPassReferance()
 	//pointerExample3()
 	//pointerExample()
@@ -30,6 +54,7 @@ func main() {
 	//structWithType()
 	//structExample()
 	//mapExample()
+	//sliceExample()
 	//sliceExampleRemove()
 	//sliceExampleAppend()
 	//switchExample()
@@ -38,10 +63,33 @@ func main() {
 	//inrementDecrementOperations()
 	//typeConversion()
 	//variableDeclartions()
-
+	//selectExample()
 	//fmt.Println(testPackageVar)
 
 	//test()
+}
+
+func emptyInterfaceConvert() {
+	var emptyInterface interface{}
+	emptyInterface = 10
+
+	nullableInt, ok := emptyInterface.(int)
+
+	var tt *int
+
+	if !ok {
+		tt = nil
+	} else {
+		tt = &nullableInt
+	}
+
+	fmt.Println(tt)
+
+	if ok {
+		fmt.Println("Boş arayüz nullable int'e dönüştürüldü:", nullableInt)
+	} else {
+		fmt.Println("Boş arayüz nullable int'e dönüştürülemedi.")
+	}
 }
 
 func variableDeclartions() {
@@ -237,7 +285,7 @@ func inrementDecrementOperations() {
 
 	//*******************************//
 
-	//Bu örnekte ise float/int=float yarak sonucu 2.5 ve tipide float olarak set eder.
+	//Bu örnekte ise float/int=float sonucu 2.5 ve tipide float olarak set eder.
 	k := 5.0 / 2
 
 	fmt.Printf("%v %T\n", k, k)
@@ -417,11 +465,12 @@ func arrayExample() {
 func sliceExample() {
 	//Array'ler go programlama dilinde value type'dır.
 	//Slice'lar ise referance type'dır.
-
+	arra := [2]int{1, 2}
+	fmt.Println(arra)
 	//Array tanımı yapılırken boyut static olarak belirtilir
 	//Slice'da ise böyle bi kural yoktur
 
-	//Arraylar tanımlandıkları anca generate edilirler
+	//Arraylar tanımlandıkları anda generate edilirler
 	var myArr [4]int
 	fmt.Println(myArr)
 	myArr[0] = 5
@@ -430,9 +479,23 @@ func sliceExample() {
 	//Slicelar tanımlandıkları anda generate edilmezler
 	//Make metodu yardımıyla generate ettik
 	var mySlc []int
-	mySlc = make([]int, 4) //Make yöntemi ile oluşturma
+	mySlc = make([]int, 4) //Make yöntemi ile oluşturma. İçinde 4 item olan bir slice oluşturur int default valuesu 0 olduğu için 4 adet 0 değeri bulunan bir dizi oluşur.
+
 	fmt.Println(mySlc)
 	mySlc[0] = 10
+	fmt.Println(mySlc)
+
+	var mySecondSlice []int
+	mySecondSlice = make([]int, 0, 10) //Uzunluğu yani kapasitesi 10 olan ama şuan legth'i yani içindeki eleman sayısı 0 olan bir slice oluşturduk.
+
+	fmt.Println(mySecondSlice)
+
+	// Uzunluğu belirtilmeyen bir tamsayı dilimi oluştur
+	mySlice := []int{}
+
+	// Elemanları ekleyerek dilimi genişlet
+	mySlice = append(mySlice, 1, 2, 3)
+	fmt.Println(mySlice) // Çıktı: [1 2 3]
 
 }
 
@@ -751,3 +814,127 @@ func double(num *int) {
 
 	fmt.Println(num)
 }
+
+func deferExample() {
+	//Go defer olarak işaretlenmiş fonksiyonları (anonim fonksiyonlar da dahildir) ana fonksiyonun çalışması sona erdikten sonra mutlaka çalıştırır.
+	//Örneğin açılmış bir veritabanı bağlantısını, üzerinde çalıştığımız açık bir dosyayı vb.
+	//Türü ne olursa olsun açılışını yaptığımız işlemlerine hemen alt satırına defer ile kapatma görevini ekleyebiliriz. Böylece unutmamız zorlaşır.
+	//Defer fonksiyonları runtime panic adını verdiğimiz çalışma anında ortaya çıkan hatalarda dahi çalışacaktır.
+	//Defer özellikle kaynakların serbest bırakılması için çok işe yarar bir özelliktir.
+
+	//Go birden fazla defer ifadesi ile karşılaştığında en sondan başlayarak çalıştıracaktır. First in Last Out!
+	defer job()
+	defer sayGoodbye()
+	fmt.Println("My name is mertcan")
+}
+
+func sayGoodbye() {
+	fmt.Println("Goodbye")
+}
+
+func job() {
+	fmt.Println("I'm a software developer")
+}
+
+func selectExample() {
+	k1 := make(chan string)
+	k2 := make(chan string)
+	go func() {
+		time.Sleep(time.Second * 1)
+		k1 <- "video"
+	}()
+	go func() {
+		time.Sleep(time.Second * 3)
+		k2 <- "ses"
+	}()
+
+	select {
+	case mesaj1 := <-k1:
+		fmt.Println("Mesaj 1:", mesaj1)
+	case mesaj2 := <-k2:
+		fmt.Println("Mesaj 2:", mesaj2)
+	}
+
+	// for i := 0; i < 1; i++ {
+	// 	select {
+	// 	case mesaj1 := <-k1:
+	// 		fmt.Println("Mesaj 1:", mesaj1)
+	// 	case mesaj2 := <-k2:
+	// 		fmt.Println("Mesaj 2:", mesaj2)
+	// 	}
+	// }
+
+}
+
+type Customer struct {
+	name     string
+	lastname string
+}
+
+func pointerversionfive() {
+
+	gamze := &Customer{
+		name:     "Gamze",
+		lastname: "elitas",
+	}
+
+	fmt.Println(gamze)
+
+	mertcan := Customer{
+		name:     "mertcan",
+		lastname: "elitas",
+	}
+
+	fmt.Println(mertcan)
+
+	changeName(&mertcan)
+
+	fmt.Println(mertcan.name)
+}
+
+func changeName(customer *Customer) {
+	customer.name = "Gamze"
+}
+
+func pointerversionsix() {
+
+	test1 := 10
+	test2 := &test1
+
+	fmt.Println(test1)
+
+	*test2 = 1
+
+	fmt.Println(test1)
+
+	test3 := &test2
+
+	**test3 = 2
+	fmt.Println(test1)
+	test4 := &test3
+
+	***test4 = 3
+	fmt.Println(test1)
+	test5 := &test4
+
+	****test5 = 5
+
+	fmt.Println(test1)
+	fmt.Println(test2)
+	fmt.Println(test3)
+	fmt.Println(test4)
+	fmt.Println(test5)
+}
+
+// Go programlama dili ile geliştirilmiş olan bir web api, .net core da ki gibi bir mantık ile aynı anda gelen n tane request available olan birden fazla thread ile
+// karşılanır ve handle edilir. Örnek olarak senkron şekilde 1 sn işlem yapan bir endpoint o anda available 12 thread varsa aynı anda gelen 12 tane isteği paralel işler döner
+// Aynı anda atılan 12 isteğin response time ortalam 1sn dir. Ama 13. istek geldiğinde karşılıyacak thread olmadığı için bekler ve ilk boşalan thread onu alır handle eder
+// bundan dolayı artık response time 2 sn civarı olur. Tabi bu bahsedilen seneryo sync olan bir senaryo içindir async bir senaryoda threadlar blocklanmayacağı için
+// gelen requesti karşılayacağından istekleri çok fazla arttırasak da response time 1 sn civarı kalacaktır.
+
+//10
+//1
+//2
+//3
+
+//5

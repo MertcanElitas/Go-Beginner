@@ -1,4 +1,4 @@
-package main
+package concurency
 
 import (
 	"fmt"
@@ -213,7 +213,7 @@ func (c circle) area() float64 {
 	return math.Pi * c.r * c.r
 }
 
-func (c circle) areatwo(chan1 chan string) float64{
+func (c circle) areatwo(chan1 chan string) {
 	chan1 <- "mertcan"
 }
 
@@ -227,15 +227,16 @@ func exec() {
 	fmt.Println("%2f\n", area1)
 
 
-  var myChannel chan string
-	myChannel := make(chan string)
+	var testChannel chan string
+	testChannel = make(chan string)
 
-	 go c1.areatwo(myChannel)
+	go c1.areatwo(testChannel)
 
 
-  fmt.Println(myChannel)
+	fmt.Println(testChannel)
 
 	c1.display()
 }
 
 //*** /Channel ***
+

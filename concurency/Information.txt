@@ -1,0 +1,73 @@
+
+Go kendi içinde runtime'de bir schedule implemente etmiştir. Cpu'nun kernel thread'lere yaptığı işlemi, go schedular goroutunilere uygular.
+Avantajı şudur kernel thread'leri oluşturmak context switching yapmak maliyetlidir. Bunu cpu'ya kadar inmeden daha programlama dili seviyesinde
+yapmak performans kazancı sağlar. Normal akışta dil işletim sistemi ile konuşur işletim sistemi kernel ile konuşur interrup'lar oluşur ve
+böylece uzun süren bir yolculuk olur ve kernel thread'ler memoryde daha fazla yer kaplar. En azından goroutine göre çok fazla yer kaplar.
+Bir goroutinin stack size'i 2kb dır, 1 thread ise 1MB dır. Bunları oluşturması ve aralarında context switching yapması çok daha performanslı çünkü işletim sistemi
+seviyesine bile geçmez direk dil seviyesinde çözer.
+
+ Go kendi içinde bütün çalışacak goroutine'ker için bir worker pool tutar. Büyük bir global queue gibi içerisinde çalışabilecek goroutineler mevcut
+ go runtime'de ayağa kalktığında go'nun runtime'ı cpu'da kaç core varsa core başına bir thread açar. Örnek olarak 4 core bir cpu 4 thread açılır.
+Bu go'nun envorinment değişkenlerinden görülüp değiştirilebilir ancak değiştirmek iyi değildir. Ve her bir açılan thread için goschedular threadlere özel bir
+work queue açar, bir global work queue var birde thread özelinde work queue var. Schedular sürekli olarak global queue ile thread'lerin kendi worker queue'leri arasında
+ bir atama işlemi gerçekleştirir. Gorotuniler, kernel threadlere göre çok daha lightweight'dır ve çok hızlı initialize edilir öldürülebilir ve context switching yapılabilir.
+
+Bir goroutine go keywordü ile oluşturulur
+
+Concurrency aynı anda birçok işle uğraşmak demektir. Paralellik ise bir çok şeyi aynı anda yapmakla ilgilidir.
+
+GOROUTINLER VE THREAD'LERIN FARKLARI
+
+1-) Memory Consumption (Bellek Tüketimi)
+
+*) Bir goroutine oluşturmak için stack üzerinde ihtiyaç duyulan alan 2 Kb. Stack alanını gerektiği zaman boşaltıp gerektiği zaman doldurarak verimli kullanarak büyürler.
+*) Thread'ler ise 1Mb(Goroutine'den 500 kat fazla) başlangıç için ihtiyaç duyduğu alandır. 
+
+Bu nedenle gelen istekleri işleyen bir sunucu, istek başına sorunsuz bir şekilde goroutine oluşturabilir, ancak bunlar thread'ler ile yönetildiğinde OutOfMemoryError exceptionlar oluşabilir.
+Concurrency için işletim sistemi thread'lerini kullanan bütün programlama dilleri bu exception ile karşılaşabilir.
+
+2-) Setup and teardown costs (Oluşturulma ve Öldürme Maliyeti)
+
+*) Threadlerin ayağa kalkma ve öldürülme maliyetleri çok fazladır çünkü işletim sistemi seviyesine inip kaynak talep eder ve bittiğinde geri iade eder.
+   Bu sorunun geçici bir çözümü bir thread pool oluşturmak ve threadleri burda yönetmektir. Ancak goroutinler runtime tarafından oluşturulur ve yok edilir ve bu oldukça düşük maliyetlidir.
+   Go dili goroutinelere manuel olarak müdahaleye izin vermez bunu doğru bulmaz.
+
+3-) Switching costs
+
+*) Bir thread bloke olduğunda, onun yerine  başka bir iş parçacığının zamanlanması gerekir. Thread'ler fırsat bulduğunda atağa geçme mantelitesinde (öncelik alma) mantığında geliştirilir ve bir 
+is parçacığı sıra kendisine gelince schedular'ın TÜM kayıtları kaydetmesi/geri yüklemesi gerekir, yani 16 genel amaçlı kayıt, PC (Program Sayacı), SP (Yığın İşaretçisi), segment kayıtları, 16 XMM kaydı,
+FP yardımcı işlemci durum, 16 AVX kaydı, tüm MSR'ler vb. Thread'ler arasında hızlı geçiş olduğunda bu oldukça önemlidir.
+
+*) Goroutine'ler işbirliği içinde zamanlanır ve bir switch oluştuğunda, yalnızca 3 kaydın kaydedilmesi / geri yüklenmesi gerekir - 
+   Program Sayacı(Program counter), Yığın İşaretçisi (Stack Pointer) ve DX.Maliyet çok daha düşük.
+
+*) Goroutine'lerin sayısı oldukça fazladır ancak 2 nedenden dolayı switch yapılacağı zaman bir performans sorunu oluşmaz.
+   İlki şudur sadece çalıştıralabilir goroutinler dikkate alınır, engellenenler dikkate alınmaz. Ayrıca modern schedular'lar
+   O(1) karmaşıklık seviyesindedir yani switch zamanı, seçilecek elementlerin çok olamasından etkilenemez.
+
+4-) How goroutines are executed (Gorotuniler Nasıl Yürütülür)
+
+*) Runtime goroutinleri oluşturmadan yok etmeye ve schedule etme gibi bütün konuları yönetir.Çalışma zamanına, üzerinde tüm goroutinlerin çoğullandığı birkaç thread tahsis edilir.
+   Herhangi bir zamanda, her iş parçacığı bir goroutine yürütüyor olacaktır. Bir goroutine engellenirse, bunun yerine bu iş parçacığında yürütülecek başka bir goroutine ile değiştirilecektir.
+   Bir goroutine bir thread üzerinde var olan bir döngü ile sürekli kendi çalışıp diğer goroutinlere fırsat vermeyebilir bu sorun Go 1.2 den sonra çözülmüştür.
+
+5-) Goroutines blocking
+
+*) Gorotuniler az maliyetlidir ve eğer blocklanırlarsa üzerinde çoğullandıkları iş parçacığının blocklanmasına neden olmazlar.
+ network 
+ input
+ sleeping
+channel operations or
+ blocking on primitives in the sync package.
+
+ *)On binlerce goroutine oluşturulmuş olsa bile, runtime yeni bir gorutine schedule ettiği zaman  ve bloke edildiğinde kaynak israfı oluşmaz.
+
+ *) Özetle goroutineler, threadler üzerinde hafif bir soyutlamadır. Bir go developer thread'ler ile ilgilenmez ve benzer şekilde işletim sistemi
+ goroutineler'den haberdar değildir. İşletim sistemi açısınden bir go programı event-driven bir C programı gibi davranacaktır.
+
+ 6-) Threads and processors 
+
+ Runtime'ın oluşturacağı thread sayısı doğrudan denetlenemez, program tarafından kullanılan işlemci çekirdeği sayısı ayarlanabilir.
+ Bu, GOMAXPROCS değişkenini runtime'da çağrısıyla ayarlayarak yapılır. GOMAXPROCS(n). İşlemci çekirdeği sayısını arttırmak 
+ tasarıma bağlı olarak uygulama performanısını her zaman arttırmaz.
+
