@@ -898,6 +898,17 @@ func changeName(customer *Customer) {
 
 func pointerversionsix() {
 
+	//Aşağıdaki örneğin açıklaması şu aşağıdadır. Hepsinin ram üzerindeki konumlanma durumları açıklanmıştır
+
+	// test1 => Değer = 10    - Adres = 0x123 => Value Type Değişken
+	// test2 => Deger = 0x123 - Adres = 0x124 => test1'in Pointer'ı
+	// test3 => Değer = 0x124 - Adres = 0x125 => test2'nin Pointer'ı
+	// test4 => Değer = 0x125 - Adres = 0x126 => test3'nin Pointer'ı
+	// test5 => Değer = 0x126 - Adres = 0x127 => test4'nin Pointer'ı
+
+	//Sonuç olarak biz test5'e ****test5 = 5 şeklinde bir değer atadığımızda bu 5 değeri test1'e kadar gider ve yazar.
+	//Sebebi şudur referans silsilesine göre test5'den test4'e ondan test3'e ondan test2'ye ordan de test1 değerine kadar uzadığı için 5 değeri test1in valuesu olur.
+
 	test1 := 10
 	test2 := &test1
 
